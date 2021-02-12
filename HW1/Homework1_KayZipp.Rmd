@@ -1,0 +1,122 @@
+---
+title: "Homework 1"
+author: "Kaylyn Zipp"
+date: "February 7, 2021"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+1.Import the “beach.csv” dataset into R and examine the first few rows of data (5 points)
+
+```{r}
+beaches <- read.csv(file = 'beach.csv')
+head(beaches)
+
+```
+To further understand the data I also 
+```{r}
+plot(x=beaches$Year, y=beaches$OpenBeach)
+plot(x=beaches$BeachID, y=beaches$OpenBeach)
+```
+
+2.Fit a model that includes interactions between Year and BeachID. Report estimates of all coefficients
+(5 points)
+
+The annual change in open beach area created by BeachID
+
+```{r}
+fit <- lm(OpenBeach ~ Year * BeachID, data = beaches)
+print(fit)
+```
+
+Equation
+y = β0 + β1 × years + β2 × B + β3 × BeachID + β4 × years × BeachID + + β5 × years × BeachID
+
+3. Predict the beach area at all three beaches in 1992 (5 points)
+
+Area at Beach A
+
+Beach A Dummy Coding = 0
+Equation Breaks down to: y = β0 + β1 × years
+
+36945.73 + -18.36 * 1992
+
+```{r}
+beachareaof_a_1992<-36945.73 + -18.36 * 1992
+print(beachareaof_a_1992)
+```
+
+Area at Beach B
+
+Beach B Dummy Coding = 1 for BeachIDB but 0 for BeachIDC
+y = β0 + β1 × years + β2 × BeachIDB + β3 × BeachIDC + β4 × years × BeachIDB 
++ β5 × years × BeachIDC
+
+Simplified
+
+y = β0 + β1 × years + β2 × 1 +  β3 × 0 + β4 × years × 1 + β5 × years × 0
+
+y = β0 + β1 × years + β2 × 1 + β4 × years × 1 
+
+36945.73 + -18.36 * years + -34211.98 + 17.04 * years
+
+36945.73 + -18.36 * 1992 + -34211.98 + 17.04 * 1992
+
+```{r}
+beachareaof_b_1992<-36945.73 + -18.36 * 1992 + -34211.98 + 17.04 * 1992
+print(beachareaof_b_1992)
+```
+
+Area at Beach C
+
+Beach C Dummy Coding = 0 for BeachIDB but 1 for BeachIDC
+y = β0 + β1 × years + β2 × BeachIDB + β3 × BeachIDC + β4 × years × BeachIDB 
++ β5 × years × BeachIDC
+
+Simplified
+y = β0 + β1 × years + β3 × BeachIDC + β5 × years × BeachIDC
+
+y = β0 + β1 × years + β3 × 1 + β5 × years × 1
+
+36945.73 + -18.36 * years + -28776.11 + 14.37 * years
+
+36945.73 + -18.36 * 1992 + -28776.11 + 14.37 * 1992
+
+```{r}
+beachareaof_c_1992 <- 36945.73 + -18.36 * 1992 + -28776.11 + 14.37 * 1992
+print(beachareaof_c_1992)
+```
+
+4. Plot the predicted area of each beach across all years
+
+
+```{r}
+timespan<-seq(from = 1992, to = 2014, by = 1)
+predictedbeachareaof_a<-36945.73 + -18.36 * timespan
+predictedbeachareaof_b<-36945.73 + -18.36 * timespan + -34211.98 + 17.04 * timespan
+predictedbeachareaof_c<-36945.73 + -18.36 * timespan + -28776.11 + 14.37 * timespan
+
+plot(x = timespan, y = predictedbeachareaof_a, type = 'l', xlab = 'Years', ylab = 'Open Beach Area')  
+lines(x = timespan, y=predictedbeachareaof_b, col = 'blue') 
+lines(x = timespan, y = predictedbeachareaof_c, col = 'red')
+legend('bottomleft', legend = c('Beach A', 'Beach B', 'Beach C'), col = c('red','blue','black'),pch = c('...'))
+```
+
+
+
+5. Interpret the rate of beach area change at each of the 3 beaches (5 points)
+
+```{r}
+BeachA <- lm(predictedbeachareaof_a ~ timespan)
+print(BeachA)
+
+BeachB <- lm(predictedbeachareaof_b ~ timespan)
+print(BeachB)
+
+BeachC <- lm(predictedbeachareaof_c ~ timespan)
+print(BeachC)
+```
+
+
+All three of the beaches, A, B & C, are declining in open area over time steadily. Beach A is decreasing at the fastest rate, -18.36 units per year. Beach c is decreasing by a rate of 3.99 units per year. Beach b is decreasing the slowest, at a rate of -1.32 units per year. Based on the information provided if management is interested in stemming the lost of potential nesting sites then beach A should be focused on.   
