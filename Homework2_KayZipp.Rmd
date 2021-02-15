@@ -1,0 +1,164 @@
+---
+title: "Homework 2"
+author: "Kaylyn Zipp"
+date: "February 12, 2021"
+output: html_document
+---
+
+Setting the stage for the rest of homework 2:
+```{r setup, include=FALSE}
+beaches <- read.csv(file = 'beach.csv')
+fit <- lm(OpenBeach ~ Year * BeachID, data = beaches)
+summary(fit)
+```
+
+1. Calculate the residuals. Use the summary() function applied to your numeric vector of residuals to
+verify that this matches the Residuals: quantiles reported from the summary of your fitted model.
+Plot a histogram of your residuals. Do they appear reasonably Gaussian? (we will go into detail on
+formal model checking later in the semester)
+
+```{r cars}
+residualfit<-resid(fit)
+summary(residualfit)
+```
+The summary statistics match the summary for the model. 
+
+```{r}
+hist(residualfit)
+```
+
+I would argue that the distribution is not reasonably Gaussian visually because there are more values that fall to the left of zero, the mean, than values that fall to the right. Athough it appears bell shaped on the left side of the mean to the right the fequency is much lower and does not follow a consistent downward freqency pattern as we move away from the mean.
+
+```{r}
+shapiro.test(residualfit)
+```
+
+The shaprio wilkes test gives us a p-value of .02484, supporting that the data is not normally distributed/Gaussian.I realize this may be a step too far than what your looking for but I got curious. 
+
+2. Calculate test statistics for your regression coefficients. Verify by comparing to test statistics reported
+from model output.
+
+I am going to proceed however under the assumption that it is normally distributed. 
+
+Verbally, to calculate the t test statistic it is the point estimate - B1 / the square root of its estimated variance
+
+So for Year
+```{r pressure, echo=FALSE}
+pt.est<-coef(fit)[2]
+Std.Error<-summary(fit)[['coefficients']]['Year', 'Std. Error']
+Year_test_stat<-pt.est/Std.Error
+```
+for BeachIDB
+```{r}
+pt.est<-coef(fit)[3]
+Std.Error<-summary(fit)[['coefficients']]['BeachIDB', 'Std. Error']
+BeachIDB_test_stat<-pt.est/Std.Error
+```
+
+for BeachIBC
+```{r}
+pt.est<-coef(fit)[4]
+Std.Error<-summary(fit)[['coefficients']]['BeachIDC', 'Std. Error']
+BeachIDC_test_stat<-pt.est/Std.Error
+```
+
+for Year:BeachIDB
+```{r}
+pt.est<-coef(fit)[5]
+Std.Error<-summary(fit)[['coefficients']]['Year:BeachIDB', 'Std. Error']
+Year_BeachIDB_test_stat<-pt.est/Std.Error
+```
+
+for Year:BeachIDC
+
+```{r}
+pt.est<-coef(fit)[6]
+Std.Error<-summary(fit)[['coefficients']]['Year:BeachIDC', 'Std. Error']
+Year_BeachIDC_test_stat<-pt.est/Std.Error
+```
+
+********3. Calculate p-values for your regression coefficients. Verify by comparing to p-values reported from model
+output. What are the associated null hypotheses? Do you reject or fail to reject these null hypotheses?
+
+The null hypotheses with these tests are 
+
+H0 : B1 = 0
+HA : B1 != 0
+
+Calculating degrees of freedom: n-k where k is 6 Intercept, Year, BeachIDB, BeachIDC, Year: BeachIDB & Year:BeachIDC
+```{r}
+n<-nrow(beaches)
+dfs<-n-6
+dfs
+```
+
+So for Year
+
+```{r}
+pvalue_year <- pt(q=-abs(Year_test_stat), df = 56) + (1 - pt(q=abs(Year_test_stat), df = 56))
+print(pvalue_year)
+```
+since the p-value is < 2e-16 we assume it is the same as the one in the summary 
+
+for BeachIDB
+```{r}
+pvalue_BeachIDB <- pt(q=-abs(BeachIDB_test_stat), df = 56) + (1 - pt(q=abs(BeachIDB_test_stat), df = 56))
+print(pvalue_BeachIDB)
+```
+
+for BeachIBC
+
+```{r}
+pvalue_BeachIDC <- pt(q=-abs(BeachIDC_test_stat), df = 56) + (1 - pt(q=abs(BeachIDC_test_stat), df = 56))
+print(pvalue_BeachIDC)
+```
+
+for Year:BeachIDB
+
+```{r}
+pvalue_YBeachIDB <- pt(q=-abs(Year_BeachIDB_test_stat), df = 56) + (1 - pt(q=abs(Year_BeachIDB_test_stat), df = 56))
+print(pvalue_YBeachIDB)
+```
+
+
+for Year:BeachIDC
+```{r}
+pvalue_YBeachIDC <- pt(q=-abs(Year_BeachIDC_test_stat), df = 56) + (1 - pt(q=abs(Year_BeachIDC_test_stat), df = 56))
+print(pvalue_YBeachIDC)
+```
+
+We reject the null hypotheses for all coefficients. There is a statistically significant relationship between these variables that deviates from 0.  
+
+4. Select a single regression coefficient (your choice) and devise a null hypothesis that is different from
+the default in lm(). Report the test statistics, your p-value, and whether you reject or fail to reject
+your null hypothesis. (5 points)
+
+Lets say the beaches are expected to loose area because of erosion at a rate of 5 units per year under the current model. I want to test if beach C is loosing beach area at a rate greater than that expected by erosion
+
+H0 : B1 = 5
+HA : B1 != 5
+
+```{r}
+pt.est<-coef(fit)[6]
+Std.Error<-summary(fit)[['coefficients']]['Year:BeachIDC', 'Std. Error']
+Year_BeachIDC_teststat<-(pt.est-5)/Std.Error
+  
+print(Year_BeachIDC_teststat)
+
+p_value<-pt(q=-Year_BeachIDC_teststat, df = 56) + (1 - pt(q=Year_BeachIDC_teststat, df = 56))
+print(p_value)
+```
+
+The value is less than .05 so we reject the null hypothesis.
+
+With my above scenario we would interpret the beach is disappearing at a rate other than the expected rate under the current erosion scenarios. 
+
+
+5. Interpret output of your fitted model. Tell me how beach area does (or does not change) through time
+at each of the 3 beaches.
+
+There is evidence to support that the rate of change at all three beaches is significantly different from zero over the course of the study.  
+
+
+
+
