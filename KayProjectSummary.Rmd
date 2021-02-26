@@ -1,0 +1,37 @@
+---
+title: "Project Description"
+author: "Kaylyn Zipp"
+date: "2/26/2021"
+output: word_document
+---
+
+  Bioenergetic modeling is an energy budget approach to understanding growth that uses the laws of thermodynamics to understand how organisms balance the budget of living (consumption, specific dynamic action, egestion, excretion, reproduction, respiration). Bioenergetic modeling is used to understand the connection between physiology, behavior and environmental conditions providing a way to quantify interactions at a number of different scales. Bioenergetic models have been used extensively in freshwater ecology and have primarily been developed on a species by species basis. Though useful, their specificity to a particular species limits their application and deriving these models is labor intensive, limited to one regional strain and oftentimes requires the borrowing of unknown parameters from other species. For eurythermal species there is evidence to support that potential regional variations exist in the metabolic response. The principle of the hierarchy of energy dictates that the organism first dedicates consumed energy to metabolism and maintenance before other processes. 
+
+  Metabolism is the base cost of the energy budget; if organisms do not consume enough energy to cover these costs they will die. Since fish are poikilothermic this base cost fluctuates with temperature. Metabolism in bioenergetics lumps together the costs of specific dynamic action and respiration. Metabolism is often experimentally derived from the amount of oxygen consumed over a period of time. Metabolism measurements fall under three categories active, routine and standard. Active metabolism includes the added cost of swimming. These entries will not be included in this analysis. Routine metabolic rate (RMR) is the average rate of metabolism when the animal is undergoing normal behaviours while standard metabolic rate (SMR) is the minimal maintenance metabolic rate.  In practice the experimental difference between these two measures tends to be blurred. All metabolic measurements are derived from respirometry, measuring the decrease of oxygen concentrations in a system over time due to its uptake by an organism. Projects use variations in their setups, from erlenmeyer flasks to custom made devices and use different techniques such as closed respirometry and intermittent flow. 
+
+  The aim of this project is to analyze standard and routine metabolic rates mined from existing literature and FishBase to determine if there are trends in metabolic rate based on their cold water or warm water designation. Here are some questions derived from this data: 
+
+Is there a relationship between metabolism, the response variable, and temperature region (coldwater, warmwater, eurythermal)?
+
+Can we create generalized relationships based on family or order that can describe the relationship between metabolism and temperature? 
+ 
+Can we create generalized coldwater/warmwater/eurythermal bioenergetic models that can describe the relationship between metabolism and temperature? 
+
+If there are relationships, do they hold if the size is varied? 
+
+Response Variable: 
+Metabolism for a 1g fish 
+
+Predictors:
+Habitat (Categorical; Freshwater, Marine, Euryhaline)
+Temperature class (Categorical; Warmwater, Coldwater, Eurythermal)
+Family (Categorical)
+Order(Categorical) 
+
+Other Variables:
+Experimental Water Temp (Continuous) 
+Metabolism Test Type (Categorical; Routine, Standard)
+Body Shape (Categorical) 
+Body Composition (Categorical: Cartilaginous, Bony) 
+Trophic Position (Categorical)
+
