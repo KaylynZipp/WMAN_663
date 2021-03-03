@@ -1,0 +1,90 @@
+---
+title: "Homework 3"
+author: "Kaylyn Zipp"
+date: "3/1/2021"
+output: html_document
+---
+1. Fit a logistic regression model that assumes the probability of success is an additive function of variables x1 and x2.
+
+```{r setup, include=FALSE}
+setwd("~/Desktop/Quant")
+Hw3<-read.csv('Homework 3 Data (1).csv')
+fit <- glm(y ~ x1 +x2, family = binomial, data = Hw3)
+summary(fit)
+```
+
+Equation: 
+y = b0 +b1* x1 + b2 * x2b
+
+2. Interpret the effect of variable x1 on the log odds of success. Verify your interpretation in R.
+
+
+```{r}
+b<-coef(fit)
+b[2]
+#Justified
+#Set x2b to zero and do a 1 unit change
+p_1_x1 <- plogis(b[1] + b[2] * 1 + b[3] * 0)
+p_1_x1
+
+p_2_x1 <- plogis(b[1] + b[2] * 2 + b[3] * 0)
+p_2_x1
+
+logs_odd_ratio_x1<-log((p_2_x1/ (1 - p_2_x1)) / (p_1_x1 / (1 - p_1_x1)))
+print(logs_odd_ratio_x1)
+```
+
+The slope coefficient represents the change in log odds associated with a 1-unit change in the predictor variable so with a 1 unit change in x1 the logs odds decreases by -0.167976. 
+
+3. Interpret the effect of variable x2 on the log odds of success. Verify your interpretation in R.
+
+```{r}
+b<-coef(fit)
+b[3]
+
+p_0_x2b <- plogis(b[1] + b[2] * 1 + b[3] * 0)
+p_0_x2b
+
+p_1_x2b <- plogis(b[1] + b[2] * 1 + b[3] * 1)
+p_1_x2b
+
+logs_odd_ratio_x2<-log((p_1_x2b / (1 - p_1_x2b)) / (p_0_x2b / (1 - p_0_x2b)))
+print(logs_odd_ratio_x2)
+```
+
+The slope coefficient represents the change in log odds associated with a 1-unit change in the predictor variable so with a 1 unit change in x1 the logs odds decreases by 
+
+4. Duplicate the Wald Test and p-values for variables x1 and x2 performed by the glm() function. Do you reject or fail to reject your null hypothesis?
+
+X1 Wald Test 
+
+```{r}
+ts<-b[2] / summary(fit)[['coefficients']]['x1', 'Std. Error']
+X1WaldTest<-2 * pnorm(-1 * abs(ts), mean = 0, sd = 1)
+print(X1WaldTest)
+```
+
+Fail to reject the null hypothesis
+
+X2b Wald Test 
+
+```{r}
+ts<-b[3] / summary(fit)[['coefficients']]['x2b', 'Std. Error']
+X2bWaldTest<-2 * pnorm(-1 * abs(ts), mean = 0, sd = 1)
+print(X2bWaldTest)
+```
+
+Reject the null hypothesis
+
+5. Predict and plot the mean probability of success over the range of values of x1.
+```{r}
+#We will set 2xb to 1 
+X1<-Hw3$x1
+
+ProbabilityPredict <- plogis(b[1] + b[2] * X1 + b[3] * 1)
+
+plot(y = ProbabilityPredict, x = X1, type = 'l',xlab = 'X1 Values', ylab = 'Probability')
+
+```
+
+
