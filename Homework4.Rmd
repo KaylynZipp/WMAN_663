@@ -1,0 +1,132 @@
+---
+title: "Homework 4"
+author: "Kaylyn Zipp"
+date: "3/1/2021"
+output: html_document
+---
+
+1. Fit a Poisson regression model that assumes expected count is an interactive function of variables x1 and x2.
+```{r}
+Data<-read.csv("Homework 4 Data.csv")
+head(Data)
+fit<-glm(y ~ x1 * x2 , family = poisson, data = Data)
+summary(fit)
+```
+
+2. Interpret the effect of variable x2 on the expected count when x2 is fixed at level 'b'. Verify your interpretation in R. 
+
+$$
+log(y_x) = \beta_0 + \beta_1 * X_1 +\beta_2*X_2b + \beta_3 *X_1 *X_2b
+$$
+$$
+log(y_x) =\beta_0 + \beta_1*X_1 + \beta_2*1 + \beta_3*X_1*1
+$$
+$$
+log(y_x) = (\beta_0 +\beta_2) + (\beta_1 + \beta_3) * X_1
+$$
+
+```{r}
+betas<-coef(fit)
+
+# log expected count at a 2
+c_2<-(betas[1] + betas[3]) + (betas[2] + betas [4]) * 2
+print(c_2)
+
+# log expected count at 3
+c_3<-(betas[1] + betas[3]) + (betas[2] + betas [4]) * 3
+print(c_3)
+
+effectvariablex1<-log(exp(c_3)/exp(c_2))
+print(effectvariablex1)
+
+confirmeffectofx1<-betas[4]+betas[2]
+print(confirmeffectofx1)
+
+```
+
+3. Interpret the effect of variable x2 on the expected count when x1 is fixed at 1. Verify your interpretation in R. 
+
+$$
+log(y_x) = \beta_0 + \beta_1 * X_1 +\beta_2*X_2b + \beta_3 *X_1 *X_2b
+$$
+$$
+log(y_x) = \beta_0 + \beta_1 * 1 +\beta_2*X_2b + \beta_3 *1 *X_2b
+$$
+$$
+log(y_x) = (\beta_0 + \beta_1 ) + (\beta_2 + \beta_3 ) *X_2b
+$$
+
+When it is A 
+
+$$
+log(y_x) = (\beta_0+\beta_1)
+$$
+```{r}
+c_a<-(betas[1] + betas[2])
+print(c_a)
+
+#When it is b
+c_b<- (betas[1] + betas[2] ) + (betas[3] + betas[4] ) * 1
+print(c_b)
+
+effectvariablex2<-log(exp(c_b)/exp(c_a))
+print(effectvariablex2)
+
+confirmeffectofx1<-betas[3] + betas[4]
+print(confirmeffectofx1)
+```
+
+
+4. Predict the expected count +/- 95% confidence intervals, over the observed range of values of x1, assuming x2 is fixed at level "b". 
+
+```{r}
+newdata <- data.frame(
+  x1 = seq(min(Data$x1), max(Data$x1), length.out = 100),
+  x2 = factor(x = rep('b', times = 100), 
+              levels = c('a','b'))
+)
+prd <-predict.glm(object = fit, newdata = newdata, type = 'link', se.fit = T)
+low <- exp(prd$fit - qnorm (0.975) *prd$se.fit)
+high <- exp(prd$fit + qnorm (0.975) *prd$se.fit)
+
+plot(y=exp(prd$fit), x = newdata$x1, xlab = 'x1', 
+     ylab = 'Expected count', cex.axis = 1.5, cex.lab = 1.5,
+     ylim = c(min(low), max(high)), type = 'l')
+lines(x = newdata$x1, y = low, lty = 2)
+lines(x = newdata$x1, y = high, lty = 2)
+```
+
+
+5. Predict the expected count +/- 95% confidence intervals, of levels "a" and "b", assuming x1 is fixed at its mean. 
+
+```{r}
+
+X1bar<-mean(Data$x1)
+betas<-coef(fit)
+
+?rep_len()
+?factor
+
+newdata <- data.frame(
+  x1 = rep_len(x = X1bar, length.out = 100),
+  x2 = sample(x = c("a","b"), replace =TRUE), 
+              levels = c('a','b'))
+
+prd <-predict.glm(object = fit, newdata = newdata, type = 'link', se.fit = T)
+low <- exp(prd$fit - qnorm (0.975) * prd$se.fit)
+high <- exp(prd$fit + qnorm (0.975) * prd$se.fit)
+
+plot(y=exp(prd$fit), x = newdata$x2, xlab = 'x2', 
+     ylab = 'Expected count', cex.axis = 1.5, cex.lab = 1.5,
+     ylim = c(min(low), max(high)), type = 'l')
+
+points(x = newdata$x2, y = low, lty = 2)
+points(x = newdata$x2, y = high, lty = 2)
+
+
+
+```
+
+
+
+
