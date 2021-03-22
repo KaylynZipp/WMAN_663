@@ -1,0 +1,143 @@
+---
+title: "Exam2"
+author: "Kaylyn Zipp"
+date: "3/22/2021"
+output: html_document
+---
+
+1. Import this dataset into R and inspect the first several rows of your data
+```{r}
+Data<-read.csv("Exam 2 Data.csv")
+head(Data)
+```
+
+2. Fit a Poisson model that assumes your response is a function of x1, x2, and x3. Include an interaction
+between x1 and x2 only (i.e., do not include an interaction between your categorical variables and any
+other variables).
+
+```{r}
+fit<-glm(y ~ x1 * x2 + x3 , family = poisson, data = Data)
+summary(fit)
+```
+
+3.Interpret the effect of variable x1 when x2 = -1
+
+$$
+y=\beta_0+\beta_1x_1+\beta_2x_2+\beta_3b+\beta_4c+\beta_5x_1*x_2
+$$
+$$
+y = \beta_0 + x_1(\beta_1+\beta_5x_2)+\beta_2x_2 + \beta_3b+\beta_4c
+$$
+
+So beta1 + beta5 * x2 for 1 unit change in x1
+
+```{r}
+b <- coef(fit)
+Effective<-b[2] + b[6] * -1
+print(Effective)
+```
+
+4. Plot expected counts ±90% confidence intervals over the observed range of variable x1. Assume variable
+when x2 = -1 and category "a".
+
+```{r}
+newdat <- data.frame(
+  x1 = seq(min(Data$x1), max(Data$x1), length.out = 100),
+  x2 = -1,
+  x3 = factor('a', levels = c('a', 'b', 'c'))
+)
+
+prd <- predict.glm(fit, newdat, se.fit = T)
+
+low <- plogis(prd$fit - qnorm(0.95) * prd$se.fit)
+high <- plogis(prd$fit + qnorm(0.95) * prd$se.fit)
+
+plot(x = newdat$x1, y = plogis(prd$fit), ylim = c(min(low), max(high)), type = 'l')
+lines(x = newdat$x1, y = low, lty = 2)
+lines(x = newdat$x1, y = high, lty = 2)
+```
+
+5. Interpret the effect of variable x3
+
+```{r}
+summary(fit)
+b <- coef(fit)
+
+print((exp(b[4])-1)*100)
+
+print((exp(b[5])-1)*100)
+```
+
+
+The log proportional change between category b and a is 0.37532. We expected a 45.5% increase in the expected count between category b and a. The log proportional change between category c and a is -0.88354.We expected a 58.7% decrease in the expected count between category a and c.
+
+6.Use contrasts to evaluate the null hypothesis that the difference in log expected count between levels
+"b" and "c" = 0. Fix x1 and x2 at their means.
+
+```{r}
+
+library(multcomp)
+#mean of x1
+mean(Data$x1)
+#-0.1320536
+#mean of x2
+mean(Data$x2)
+#0.03782269
+
+#When we calculate the difference in y between the two levels we get : 
+#yc - yb = beta_4 - beta_5 
+#creating the matrix
+b
+x <- matrix(c(0, 0, 0, -1, 1, 0), nrow = 1)
+cntr <- glht(model = fit, linfct = x)
+cntr
+
+summary(cntr, test = adjusted('none'))
+```
+We conclude this because of the low p-value (2e-16) associated with our hypothesis test that there is evidence that β1−β5 does not equal 0 when x1 and x2 are to their means, which leads us to reject our null hypothesis.
+
+7. Derive the test statistic and p-value associated with the interaction between x1 and x2. What is the
+null hypothesis? Do we reject or fail to reject this null hypothesis? Defend your answer
+
+```{r}
+b
+ts <- b[6] / summary(fit)[['coefficients']]['x1:x2', 'Std. Error']
+ts
+
+summary(fit)[['coefficients']]['x1:x2', 'z value']
+
+# p value
+2 * pnorm(-1 * abs(ts), mean = 0, sd = 1)
+
+summary(fit)[['coefficients']]['x1:x2', 'Pr(>|z|)']
+```
+
+The null hypothesis is that beta5 = 0. There is evidence the the effect of variable x1 depends on the level of x2, since the p-value is less than .05 so we fail to reject the null hypothesis. 
+
+8. Assume you have the following realizations of random variable Y :
+y = (1, 0)
+Further assume realizations of the random variable Y are Bernoulli distributed:
+y ∼ Bernoulli(p).
+What is the probability of observing each of these random variables assuming the log odds of success =
+-2?
+```{r}
+#find the probability of success
+prob<-exp(-2)/(1+exp(-2))
+
+#a Bernoulli RV is equivalent to Binomial with N = 1
+
+print(dbinom(0, size = 1, p = prob))
+print(dbinom(1, size = 1, p = prob))
+```
+
+9. What is the "support" of a Bernoulli random variable? What are the acceptable values of it’s sole
+parameter? To which quantity do we apply a link function, and why do we do this? What is the
+principle link function we use in binomial (i.e., logistic) regression, and what it it’s inverse function?
+
+The support of a Bernoulli Random Variable is {0,1}, which dictates whether or not there was a success in each trial. The probability of success is the sole parameter; E(Y), the expected realizations, is equal to the probability of success and Var(Y), variance in the expected realizations, is p(1-p). The link function is applied to the covariates. We apply this function ot covariates when they are not bound between 0 and 1 and we would like them to fit into this parameter space, ie. temperature. The most common link function we use is the Logit function where x = log(p/1-p). Its inverse function, the inverse Logit Link Function, is (exp(x)/(1+exp(x)))=p 
+
+10. What is a fundamental assumption we make to derive inference when comparing two levels of a
+categorical random variable?
+
+The fundamental assumption that we make is that our categorical random variable is Gaussian. Since they are Gaussian, the linear combinations of our Gaussian random variables are themselves random variables and this allows us to derive inference. We also assume independence.  
+
