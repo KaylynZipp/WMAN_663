@@ -1,0 +1,101 @@
+---
+title: "Homework6"
+author: "Kaylyn Zipp"
+date: "4/11/2021"
+output: html_document
+---
+
+1. Load data and place into an unmarkedFramePCount object
+
+```{r}
+y<-read.csv('count.csv')
+head(y)
+
+p_covs <- read.csv('obs_covs.csv')
+head(p_covs)
+
+det_covs <- list(
+j = data.frame(p_covs[, c('j1', 'j2','j3')]))
+
+site_covs <- read.csv('site_covs.csv')
+head(site_covs)
+site_covs$x2<-factor(site_covs$x2)
+
+library(unmarked)
+sosp_mat <- as.matrix(y)
+nmix_data <- unmarkedFramePCount(y = sosp_mat, siteCovs = site_covs, obsCovs = det_covs)
+```
+
+2. Fit an N-mixture model that assumes conditional detection probability is a function of the detection
+covariate provided, and expected abundance is a additive function of variables x1 and x2.
+```{r}
+fit <- pcount(formula = ~ j ~ x1 + x2, data = nmix_data, K = 100)
+summary(fit)
+```
+
+3. Interpret the effect of x1 on the expected count at each site. Verity your interpretation in R.
+```{r}
+b<-coef(fit)
+
+exp_1<-b[1]+b[2]*1
+exp_2<-b[1]+b[2]*2
+diff<-exp_1 - exp_2
+print(diff)
+
+b[2]
+
+exp(diff)
+exp(b[2])
+
+```
+
+4. Predict and plot the effect of the supplied detection covariate. Do this over the range of this covariate.
+
+```{r}
+Min<-min(p_covs)
+Max<-max(p_covs)
+new_p <- data.frame( j = seq(from = Min, to = Max, length.out = 100))
+
+prd_p <- predict(object = fit, newdata = new_p, type = 'det')
+
+plot(y=prd_p$Predicted, x = new_p$j, xlab = 'Detection Covariate', 
+     ylab = 'Predicted', type = 'l')
+
+lines(x= new_p$j, y = prd_p$lower, lty = 2)
+lines(x= new_p$j, y = prd_p$upper, lty = 2)
+```
+
+
+5. Use contrasts to compare expected abundance between all pairwise levels of variable x2. Obtain p-values associated with each contrast and tell me whether you reject or fail to reject each null hypothesis tested.
+
+```{r}
+x <- matrix(
+c(0, 0, 1, -1, 0,
+0, 0, 1, 0, -1,
+0, 0, 0, 1, -1),
+nrow = 3, byrow = T
+)
+x
+lin_com <- linearComb(obj = fit, coefficients = x, type = 'state')
+lin_com
+
+w <- coef(lin_com) / SE(lin_com)
+w
+pvalues<-2 * pnorm(-1 * abs(w))
+```
+
+We fail to reject the null hypothesis when comparing level b to level c
+```{r}
+pvalues[1]
+```
+
+We reject the null hypothesis when comparing level b to level d
+```{r}
+pvalues[2]
+```
+
+We reject the null hypothesis when comparing level c to level d
+```{r}
+pvalues[3]
+```
+
