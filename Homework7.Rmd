@@ -1,0 +1,179 @@
+---
+title: "Homework 7"
+author: "Kaylyn Zipp"
+date: "4/15/2021"
+output: html_document
+---
+
+1. Load data and place into an unmarkedFrameOccu object
+
+```{r setup, include=FALSE}
+y <- read.csv("Bobcat.csv")
+sosp_mat <- as.matrix(y)
+
+p_covs <- read.csv('p covariates.csv')
+
+det_covs <- list(
+people = data.frame(p_covs[, c('People1', 'People2','People3','People4', 'People5', 'People6', 'People7', 'People8', 'People9', 'People10', 'People11', 'People12', 'People13', 'People14', 'People15', 'People16', 'People17', 'People18', 'People19', 'People20', 'People21', 'People22', 'People23', 'People24', 'People25', 'People26', 'People27', 'People28', 'People29', 'People30', 'People31', 'People32', 'People33','People34','People35','People36','People37', 'People38', 'People39', 'People40', 'People41', 'People42', 'People43', 'People44', 'People45', 'People46', 'People47', 'People48', 'People49', 'People50', 'People51', 'People52','People53', 'People54', 'People55','People56', 'People57', 'People58', 'People59', 'People60', 'People61', 'People62', 'People63', 'People64', 'People65', 'People66', 'People67', 'People68', 'People69', 'People70', 'People71')]))
+
+site_covs<- read.csv('psi covariates.csv')
+
+library(unmarked)
+nmix_data<-unmarkedFramePCount(y = sosp_mat, 
+siteCovs = site_covs, 
+obsCovs = det_covs) 
+
+```
+
+
+2. Fit the following candidate set of models:
+```{r}
+
+library(AICcmodavg)
+
+# Intercept ; Intercept
+fit1 <- pcount(formula = ~ 1 ~ 1 ,nmix_data, K = 100,mixture = "P")
+fit1_AIC<-AICc(mod = fit1, second.ord = F)
+print(fit1_AIC)
+# People ; Intercept
+fit2 <- pcount(formula = ~ people ~ 1 ,nmix_data, K = 100,mixture = "P")
+fit2_AIC<-AICc(mod = fit2, second.ord = F)
+print(fit2_AIC)
+# Intercept ; disturbance
+fit3 <- pcount(formula = ~ 1 ~ Dist_5km ,nmix_data, K = 100,mixture = "P")
+fit3_AIC<-AICc(mod = fit3, second.ord = F)
+print(fit3_AIC)
+summary(fit3)
+#People ; Disturbance
+fit4 <- pcount(formula = ~ people ~ Dist_5km,nmix_data, K = 100,mixture = "P")
+fit4_AIC<-AICc(mod = fit4, second.ord = F)
+print(fit4_AIC)
+summary(fit4)
+
+cand.set1<-list(P1 = fit1, P2 = fit2, P3 = fit3, P4 = fit4)
+mods <- aictab(cand.set = cand.set1, second.ord = F)
+head(mods)
+```
+
+3. Perform model selection with AIC. What is your top model? How do you know? Is there model selection
+uncertainty?
+
+The top model would be the intercept, disturbance model since it has the lowest AIC score. This would suggest that site specific variables are more influential than point. There is little difference between the intercept, disturbance and people, disturbance model creating some uncertainity. 
+
+4. Average both the effect of people on detection, and disturbance on occupancy, over all models. Report
+model-averaged slope coefficients and 95% confidence intervals.
+
+```{r}
+avg_type_1 <- modavgShrink(cand.set = cand.set1,
+  parm = 'people',
+  second.ord = F,
+parm.type = "detect")
+print(avg_type_1)
+
+avg_type_2 <- modavgShrink(cand.set = cand.set1,
+  parm = 'Dist_5km',
+  second.ord = F,
+parm.type = 'lambda')
+print(avg_type_2)
+```
+
+Modeled Averaged Coefficients; 
+People: -0.2 with 95% confidence intervals of -0.41, 0.37
+Dist_5km: -23.71 with 95% confidence intervals of -32.4, -15.03
+
+
+5. Obtain and plot model-averaged predictions of occupancy probability and detection probability. Average over all models, and make predictions over the observed range of each variable.
+
+```{r}
+library(unmarked)
+library(AICcmodavg)
+
+MinDist<-min(site_covs)
+MaxDist<-max(site_covs)
+
+new_dat <- data.frame(
+Dist_5km = seq(from = MinDist, to = MaxDist, length.out = 100))
+
+# calculating model averaged predictions
+avg_prd <- modavgPred(cand.set = cand.set1,
+newdata = new_dat,
+second.ord = F,
+parm.type = 'lambda')
+
+avg_prd
+
+plot(y=avg_prd$mod.avg.pred, x = new_dat$Dist_5km, xlab = 'Abundance Covariate', 
+     ylab = 'Predicted', type = 'l')
+
+lines(x= new_dat$Dist_5km, y = avg_prd$lower.CL, lty = 2)
+lines(x= new_dat$Dist_5km, y = avg_prd$upper.CL, lty = 2)
+
+p_covs[is.na(p_covs)] <- 0
+
+
+# To find the Max and Min of the detection varaible
+
+Max1<-max(p_covs$People1); Max2<-max(p_covs$People2); Max3<-max(p_covs$People3); Max4<-max(p_covs$People4); Max5<-max(p_covs$People5); Max6<-max(p_covs$People6);
+Max7<-max(p_covs$People7); Max8<-max(p_covs$People8); Max9<-max(p_covs$People9); 
+Max10<-max(p_covs$People10)
+
+Max11<-max(p_covs$People11); Max12<-max(p_covs$People12); Max13<-max(p_covs$People13)
+Max14<-max(p_covs$People14); Max15<-max(p_covs$People15); Max16<-max(p_covs$People16)
+Max17<-max(p_covs$People17); Max18<-max(p_covs$People18); Max19<-max(p_covs$People19)
+
+Max20<-max(p_covs$People20); Max21<-max(p_covs$People21); Max22<-max(p_covs$People22)
+Max23<-max(p_covs$People23); Max24<-max(p_covs$People24); Max25<-max(p_covs$People25)
+Max26<-max(p_covs$People26); Max27<-max(p_covs$People27); Max26<-max(p_covs$People26)
+Max27<-max(p_covs$People27); Max28<-max(p_covs$People28); Max29<-max(p_covs$People29)
+
+Max30<-max(p_covs$People30); Max31<-max(p_covs$People31); Max32<-max(p_covs$People32)
+Max33<-max(p_covs$People33); Max34<-max(p_covs$People34); Max35<-max(p_covs$People35)
+Max36<-max(p_covs$People36); Max37<-max(p_covs$People37); Max36<-max(p_covs$People36)
+Max37<-max(p_covs$People37); Max38<-max(p_covs$People38); Max39<-max(p_covs$People39)
+
+Max40<-max(p_covs$People40); Max41<-max(p_covs$People41); Max42<-max(p_covs$People42)
+Max43<-max(p_covs$People43); Max44<-max(p_covs$People44); Max45<-max(p_covs$People45)
+Max46<-max(p_covs$People46); Max47<-max(p_covs$People47); Max46<-max(p_covs$People46)
+Max47<-max(p_covs$People47); Max48<-max(p_covs$People48); Max49<-max(p_covs$People49)
+
+Max50<-max(p_covs$People50); Max51<-max(p_covs$People51); Max52<-max(p_covs$People52)
+Max53<-max(p_covs$People53); Max54<-max(p_covs$People54); Max55<-max(p_covs$People55)
+Max56<-max(p_covs$People56); Max57<-max(p_covs$People57); Max56<-max(p_covs$People56)
+Max57<-max(p_covs$People57); Max58<-max(p_covs$People58); Max59<-max(p_covs$People59)
+
+Max60<-max(p_covs$People60); Max61<-max(p_covs$People61); Max62<-max(p_covs$People62)
+Max63<-max(p_covs$People63); Max64<-max(p_covs$People64); Max65<-max(p_covs$People65)
+Max66<-max(p_covs$People66); Max67<-max(p_covs$People67); Max66<-max(p_covs$People66)
+Max67<-max(p_covs$People67); Max68<-max(p_covs$People68); Max69<-max(p_covs$People69)
+
+Max70<-max(p_covs$People70); Max71<-max(p_covs$People71)
+
+new_dat2 <- data.frame(
+People1 = seq(from = 0, to = Max1, length.out = 100), People2 = seq(from = 0, to = Max2, length.out = 100), People3 = seq(from = 0, to = Max3, length.out = 100),People4 = seq(from = 0, to = Max4, length.out = 100), People5 = seq(from = 0, to = Max5, length.out = 100), People6 = seq(from = 0, to = Max6, length.out = 100), People7 = seq(from = 0, to = Max7, length.out = 100), People8 = seq(from = 0, to = Max8, length.out = 100),People9 = seq(from = 0, to = Max9, length.out = 100), People10 = seq(from = 0, to = Max10, length.out = 100), People11 = seq(from = 0, to = Max11, length.out = 100), People12 = seq(from = 0, to = Max12, length.out = 100), People13 = seq(from = 0, to = Max13, length.out = 100), People14 = seq(from = 0, to = Max14, length.out = 100),People15 = seq(from = 0, to = Max15, length.out = 100),People16 = seq(from = 0, to = Max16, length.out = 100),People17 = seq(from = 0, to = Max17, length.out = 100),People18 = seq(from = 0, to = Max18, length.out = 100),People19 = seq(from = 0, to = Max19, length.out = 100),People20 = seq(from = 0, to = Max20, length.out = 100),People21 = seq(from = 0, to = Max21, length.out = 100),People22 = seq(from = 0, to = Max22, length.out = 100),People23 = seq(from = 0, to = Max23, length.out = 100),People24 = seq(from = 0, to = Max24, length.out = 100),People25 = seq(from = 0, to = Max25, length.out = 100),People26 = seq(from = 0, to = Max26, length.out = 100),People27= seq(from = 0, to = Max27, length.out = 100),People28= seq(from = 0, to = Max28, length.out = 100),People29= seq(from = 0, to = Max29, length.out = 100),People30 = seq(from = 0, to = Max30, length.out = 100),People31 = seq(from = 0, to = Max31, length.out = 100),People32= seq(from = 0, to = Max32, length.out = 100),People33 = seq(from = 0, to = Max33, length.out = 100),People34 = seq(from = 0, to = Max34, length.out = 100),People35 = seq(from = 0, to = Max35, length.out = 100),People36 = seq(from = 0, to = Max36, length.out = 100),People37 = seq(from = 0, to = Max37, length.out = 100),People38 = seq(from = 0, to = Max38, length.out = 100),People39 = seq(from = 0, to = Max39, length.out = 100),People40 = seq(from = 0, to = Max40, length.out = 100),People41 = seq(from = 0, to = Max41, length.out = 100),People42 = seq(from = 0, to = Max42, length.out = 100),People43 = seq(from = 0, to = Max43, length.out = 100),People44 = seq(from = 0, to = Max44, length.out = 100),People45 = seq(from = 0, to = Max45, length.out = 100),People46 = seq(from = 0, to = Max46, length.out = 100),People47 = seq(from = 0, to = Max47, length.out = 100),People48 = seq(from = 0, to = Max48, length.out = 100),People49 = seq(from = 0, to = Max49, length.out = 100),People50 = seq(from = 0, to = Max50, length.out = 100),People51 = seq(from = 0, to = Max51, length.out = 100),People52 = seq(from = 0, to = Max52, length.out = 100),People53 = seq(from = 0, to = Max53, length.out = 100),People54 = seq(from = 0, to = Max54, length.out = 100),People55 = seq(from = 0, to = Max55, length.out = 100),People56 = seq(from = 0, to = Max56, length.out = 100),People57 = seq(from = 0, to = Max57, length.out = 100),People58 = seq(from = 0, to = Max58, length.out = 100),People59 = seq(from = 0, to = Max59, length.out = 100),People60 = seq(from = 0, to = Max60, length.out = 100),People61 = seq(from = 0, to = Max61, length.out = 100),People62 = seq(from = 0, to = Max62, length.out = 100),People63 = seq(from = 0, to = Max63, length.out = 100),People64 = seq(from = 0, to = Max64, length.out = 100),People65 = seq(from = 0, to = Max65, length.out = 100),People66 = seq(from = 0, to = Max66, length.out = 100),People67 = seq(from = 0, to = Max67, length.out = 100),People68 = seq(from = 0, to = Max68, length.out = 100),People69 = seq(from = 0, to = Max69, length.out = 100),People70 = seq(from = 0, to = Max70, length.out = 100), People71 = seq(from = 0, to = Max71, length.out = 100))
+
+#new data
+
+new_dat3 <- data.frame(
+people = seq(from = 0, to = 5.6, length.out = 100)) 
+
+                                     
+avg_prd2<- modavgPred(cand.set = cand.set1,
+newdata = new_dat3,
+second.ord = F,
+parm.type = "detect")
+
+plot(y=avg_prd2$mod.avg.pred, x = new_dat3$people, xlab = 'Abundance Covariate', 
+     ylab = 'Predicted', type = 'l', ylim = c(0,.3))
+
+lines(x= new_dat3$people, y = avg_prd2$lower.CL, lty = 2)
+lines(x= new_dat3$people, y = avg_prd2$upper.CL, lty = 2)
+
+
+
+```
+
+
+
+
+
+
