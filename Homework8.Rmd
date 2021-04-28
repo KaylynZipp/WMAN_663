@@ -1,0 +1,80 @@
+---
+title: "Homework 8"
+author: "Kaylyn Zipp"
+date: "4/26/2021"
+output: html_document
+---
+
+1. Fit an N-mixture model that assumes abundance is a function of wetland size and type, and detection
+probability is a function of sky and time (5 points).
+
+```{r}
+sosp_mat<-read.csv("sosp_nmix.csv")
+library(unmarked)
+sosp_mat <- as.matrix(sosp_mat)
+
+p_covs <- read.csv('p_covs_nmix.csv')
+det_covs <- list(
+time = data.frame(p_covs[, c('time.1', 'time.2')]),
+sky = data.frame(sky.1 = factor(p_covs$sky.1),
+sky.2 = factor(p_covs$sky.2))
+
+)
+site_covs <- read.csv('n_covs_nmix.csv')
+head(site_covs)
+
+nmix_data <- unmarkedFramePCount(y = sosp_mat, siteCovs = site_covs, obsCovs = det_covs) 
+
+fit <- pcount(formula = ~ time + sky ~ size + type, data = nmix_data, K = 100)
+```
+
+2. Write a function that calculates the sum of squared Pearson residuals from a fitted model.
+
+```{r}
+
+Pearson <- function(fit){ 
+  sosp_mat<-read.csv("sosp_nmix.csv")
+  sosp_mat<-as.matrix(sosp_mat)
+  count<-sosp_mat[,1]
+  count2<-sosp_mat[,2]
+  obs<-as.matrix(c(rbind(count,count2)))
+  prd_a<-predict(object = fit, type = 'state')
+  prd_ab<-as.matrix(c(rbind(prd_a$Predicted, prd_a$Predicted)))
+  lambda<-prd_ab
+  pred_c<-predict(object = fit, type = "det")
+  phat<-pred_c$Predicted
+  ts<-(obs - (lambda*phat))^2 / (lambda*phat*(1-phat)) 
+  return(sum(ts))
+
+}
+Pearson(fit)
+
+```
+
+3. Use the parboot() function in R to simulate the distribution of this test statistic under the assumption that your fitted model is the data-generating model. Simulate 1000 values of the test statistic. Note that this may take several minutes (5 points).
+
+```{r}
+sosp_mat<-read.csv("sosp_nmix.csv")
+sims <- parboot(object = fit, statistic = Pearson, nsim = 1000, report = 1)
+sims
+```
+
+
+4. Plot the distribution of the simulated test statistic. Include in this plot the value of your test statistic calculated from your fitted model. What is the null hypothesis you are testing when conducting model checking? Do you reject or fail to reject this null hypothesis? What are the implications for how well you model fits the data (5 points)?
+
+Plot of the distribution of the test statistic:
+
+```{r}
+hist(sims@t.star[,1], xlab = 'Pearson', main = 'distribution of the test statistic', cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5)
+lines(x = rep(Pearson(fit), 2),
+y = c(0, 1000),
+col = 'red', lwd = 3)
+
+sum(sims@t.star[,1]>Pearson(fit))/1000
+
+sims
+```
+
+The null hypothesis is that the test statistic could have reasonably arisen from the theoretical distribution so our fitted model is the data generating model. We fail to reject the null hypothesis, there is not enough evidence to suggest that our fitted model is not the data generating model. This means that our model is a reasonable approximation of the data generating model. The histogram visually verifies that because our observed statistic falls very close to the middle of   
+
+
