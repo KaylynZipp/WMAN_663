@@ -1,0 +1,246 @@
+---
+title: "Exam 3"
+author: "Kaylyn Zipp"
+date: "5/5/2021"
+output: html_document
+---
+
+
+1. Describe a sampling procedure that may have given rise to this dataset
+
+Visit N = 100 sites. At each site, conduct J = 5 replicate surveys. During each replicate survey, record the presence of absence of a species.At each site, record covariate x1 and x2 found in the sitecovs dataset. Do this once per site. During each replicate survey, record detection covariate obscov1 and obscov2.
+
+2. Import data and fit an occupancy model that assumes detection probability is an additive function of
+obscovs1 and obscovs2; and that occupancy probability is an additive function of x1 and x2
+
+```{r}
+Y <- read.csv('detect.csv')
+sosp_mat <- as.matrix(Y)
+sitecos <- read.csv('sitecovs.csv')
+obscovs1 <- read.csv('obscovs1.csv')
+obscovs2 <- read.csv('obscovs2.csv')
+
+det_covs <- list(
+  obscovs1 = data.frame(obscovs1),
+  obscovs2 = data.frame(obscovs2))
+
+library(unmarked)
+
+occudata <- unmarkedFrameOccu(y = sosp_mat, # detection / non-detection
+                               siteCovs = sitecos, # site-level covs
+                               obsCovs = det_covs) # detection covariates
+summary(occudata)
+
+fit <- occu(formula = ~ obscovs1 + obscovs2 ~ x1 + x2,data = occudata)
+summary(fit)
+```
+
+3. Use contrasts to determine if occupancy probability different when x1 = 2 vs. when x1 = -2?
+```{r}
+cm <- matrix(c(0, 2, 0), nrow = 1)
+cnt <- linearComb(obj = fit, coefficients = cm, type = 'det')
+X1.2<-pnorm(-1 * abs(coef(cnt) / SE(cnt))) * 2
+X1.2
+
+cm <- matrix(c(0, -2, 0), nrow = 1)
+cnt <- linearComb(obj = fit, coefficients = cm, type = 'det')
+X1.neg2<-pnorm(-1 * abs(coef(cnt) / SE(cnt))) * 2
+X1.neg2
+```
+Probability is not different between when x1 = 2 vs. when x1 = -2.
+
+4. Use model selection to compare the following 4 models. Which model is the "top" model? How do you
+know?
+
+(a) ∼ obscovs1 + obscovs2 ∼ x1 + x2
+```{r}
+library(AICcmodavg)
+occu_data <- unmarkedFrameOccu(y = sosp_mat, # detection / non-detection
+                               siteCovs = sitecos, # site-level covs
+                               obsCovs = det_covs) # detection covariates
+fit_AIC<-AICc(mod = fit, second.ord = F)
+print(fit_AIC)
+```
+(b) ∼ obscovs1 + obscovs2 ∼ x1
+
+```{r}
+fit2 <- occu(formula = ~ obscovs1 + obscovs2 ~ x1,occu_data)
+fit2_AIC<-AICc(mod = fit2, second.ord = F)
+print(fit2_AIC)
+```
+(c) ∼ obscovs1 + obscovs2 ∼ x2
+```{r}
+fit3 <- occu(formula = ~ obscovs1 + obscovs2 ~ x2,occu_data)
+fit3_AIC<-AICc(mod = fit3, second.ord = F)
+print(fit3_AIC)
+```
+(d) ∼ obscovs1 + obscovs2 ∼ 1
+```{r}
+fit4 <- occu(formula = ~ obscovs1 + obscovs2 ~ 1,occu_data)
+fit4_AIC<-AICc(mod = fit4, second.ord = F)
+print(fit4_AIC)
+```
+
+```{r}
+mod_list <- list(
+  m1 = fit, m2 = fit2, m3 = fit3, m4 = fit4
+)
+head(mod_list)
+aictab(mod_list, second.ord = F)
+```
+
+
+ ∼ obscovs1 + obscovs2 ∼ x2 , the third model, is the "top model" because it has the smallest AIC score. It is closely followed by ∼ obscovs1 + obscovs2 ∼ x1.
+ 
+5. Obtain model-averaged estimates of x1. What conclusions do you draw regarding this variable?
+
+```{r}
+
+
+
+
+```
+
+
+cand.set <- list(
+  m1 = fit, m2 = fit2, m3 = fit3, m4 = fit4)
+head(cand.set)
+aictab(cand.set, second.ord = F)
+
+avg_type_2 <- modavgShrink(cand.set = cand.set,
+parm = 'x1',
+second.ord = F,
+parm.type = 'lambda')
+
+Would not knit so put the code here. No idea why
+
+model-averaged confidence intervals do not overlap 0
+so I conclude this coefficient has a non-zero influence on detection probability.
+
+6. Plot model-averaged predictions of how detection probability changes across the observed range of
+obscovs2
+
+```{r}
+
+newdat <- data.frame(
+obscovs2 = seq(min(det_covs$obscovs2), max(det_covs$obscovs2), length.out = 100),
+obscovs1 = rep(0, 100)
+)
+obscovs2_prd <- modavgPred(mod_list, newdata = newdat, second.ord = T,
+
+parm.type = 'detect')
+
+plot(x = newdat$obscovs2, y = obscovs2_prd$mod.avg.pred, type = 'l',
+ylim = c(min(obscovs2_prd$lower.CL), max(obscovs2_prd$upper.CL)))
+lines(x = newdat$obscovs2, y = obscovs2_prd$lower.CL, lty = 2)
+lines(x = newdat$obscovs2, y = obscovs2_prd$upper.CL, lty = 2)
+```
+
+7. Evaluate the fit of the top model using the sum of squared Pearson’s residuals as a test statistic. A
+function for evaluating this test statistic is provided at the bottom of the exam.
+
+The Pearsons Function
+```{r}
+chisq <- function(mod){ # mod is fitted model
+obs <- getY(mod@data) # observed
+ex <- fitted(mod) # expected
+ts <- (ex - obs) ^ 2 / # chi-square statistic
+(ex * (1 - ex))
+return(sum(ts))
+}
+chisq(fit)
+```
+
+Top modeling fit check
+```{r}
+sims <- parboot(object = fit3, statistic = chisq, nsim = 1000)
+
+hist(sims@t.star[, 1], xlab = 'chisq',
+main = 'distribution of test statistic',
+cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5)
+lines(x = rep(chisq(fit3), 2),
+y = c(0, 1000),
+col = 'red', lwd = 3)
+
+sum(sims@t.star[, 1] > chisq(fit3)) / 1000
+```
+Since our null hypothesis is that the fitted model is the data generating model and we have a p-value greater than .05 we fail to reject the null hypothesis, so there is support that our top model is a good fit of the data. 
+
+8. What is the closure assumption? What are the consequences of violating the closure assumption? Tell
+me why violating the closure assumption results in these consequences.
+
+The closure assumption is that a species is present or absent across all replicate surveys regardless of patterns of detection or non-detection. So if a sepcies was detected at the first survey we assume it was present and available for detection at all surveys. 
+
+So we calculate the probabiluty of detecting a species as: 
+
+ρ = 1 − (1 − p)^J
+
+where J is the number of replicate surveys. 
+We estimate the number of sites where a species is detected at least once as :
+Φ = φ/ρ
+
+We then estimate the probability a site is occpied by 
+ψ =Φ/N
+
+So if we do three replicate surveys and find 
+
+ρ = 1 − (1 −1/3)^3 ≈ 0.71
+
+if we violate closure and the species is actually absent from the site on the third replicate then the probability of detecting the species would be 
+
+ρ = 1 − (1 −1/2)^2 ≈ 0.75
+
+So by violating closure we underestimate detection probability and overestimate the occupancy probability. 
+
+
+9. Assume you have variable p that is bounded between 0 and 1. Further, assume p = 0.25. What link
+function would you use to transform p to the real number line? What is the analogous vale of p = 0.25
+on the real number line?
+
+ you could use the logit link to convert p to the real number link
+```{r}
+y<-log(0.25 / (1 - 0.25))
+print(y)
+
+```
+
+10. Assume you have a random variable that can only obtain values of 0, 1, 2, ..., ∞. What probability
+distribution might you use to model such data? What is (are) the parameter(s) of this probability
+distribution? What link function might you use if you wanted to model that parameter as a linear
+function of variables?
+
+I would use a poisson distribution.The parameters for a poisson distribution are λ > 0, which represents the rate or intensity of events. Supportfor this distribution is Y ∈ {0, 1, 2, ..., ∞}. I would use a log link function
+to model p as a linear function of variables
+
+11. Discuss null hypothesis significance testing within the context of model checking. Be sure to include
+the following phrases in your description:
+
+assumptions of the null hypothesis
+• test statistic
+• p-value
+• reject or fail to reject the null hypothesis
+
+Null hypothesis significance testing is a method of inference where a null hypothesis, usually of no effect is compared with an alternative hypothesis. Evidence for rejecting or failing to reject the null hypothesis is derived from the test statistic and the therotetical properties of its sampling distribution. A p-value is used to determine whether we fail to reject or reject the null hypothesis. the p-value is the probability of observing a moreextremem value of a test statistic under the assumption of the null. The p-value is typically set at alpha = .05. If the p-value of the null hypothesis test conducted is found to be less than .05 we can say there is reasonable evidence to reject the null hypothesis. We only reject the null hypothesis if our p-value is small to avoid falsely rejecting the null hypothesis. Thre is the assumption that the distribution of the sample means, across independent samples, is normal when using this method. 
+
+
+For questions 12 and 13, assume the following linear model (6 points each):
+
+y = β0 + β1x1 + β2x2 + β3x3 + β4x2x3
+
+where x1 is categorical and is coded = 1 if variable x1 obtains level “b”, and is coded = 0 if x1 obtains level
+“a”; and x2 and x3 are both continuous random variables.
+
+
+12. interpret the coefficient β1
+
+β1 is the difference between levels ‘b’ and levels ‘a’ when predictor variable x3 = 0.
+
+13. How does the response variable change in response to a 1-unit change in x2?
+
+The response variable changes β2 units for every 1-unit increase in x2
+
+
+
+
+
+
